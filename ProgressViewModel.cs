@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Windows;
 namespace WpfApp2
 {
     
@@ -17,11 +18,13 @@ namespace WpfApp2
         private int _progressValue;
         private bool _isRunning;
         private string _statusText;
+        private Visibility _progressVisibility;
 
         public ProgressViewModel()
         {
             StartCommand = new RelayCommand(async () => await ExecuteStartCommandAsync(), () => !IsRunning);// 统筹法
             StatusText = "准备开始...";
+            ProgressVisibility = Visibility.Hidden;
         }
 
         public int ProgressValue
@@ -48,13 +51,18 @@ namespace WpfApp2
             get => _statusText;
             set => SetProperty(ref _statusText, value);
         }
-
+        public Visibility ProgressVisibility
+        {
+            get => _progressVisibility;
+            set => SetProperty(ref _progressVisibility, value);
+        }
         public ICommand StartCommand { get; }
         // async 这里有需要等待的操作
         private async Task ExecuteStartCommandAsync()
         {
             IsRunning = true;
             ProgressValue = 0;
+            ProgressVisibility = Visibility.Visible; // 显示进度条
             StatusText = "正在执行...";
 
             try
@@ -65,7 +73,7 @@ namespace WpfApp2
                 var task = Task.Run(() => Test(ref percent));
 
                 // 在UI线程中持续更新进度
-                while (!task.IsCompleted) 
+                while (!task.IsCompleted)
                 {
                     ProgressValue = percent;
                     StatusText = $"进度: {percent}%";
@@ -77,11 +85,15 @@ namespace WpfApp2
                 ProgressValue = percent;
                 StatusText = $"完成! 最终进度: {percent}%";
                 Debug.WriteLine($"完成: {percent}");
+                await Task.Delay(500);
+                ProgressVisibility = Visibility.Hidden; // 隐藏进度条
             }
             catch (Exception ex)
             {
                 StatusText = $"错误: {ex.Message}";
                 Debug.WriteLine($"错误: {ex.Message}");
+                await Task.Delay(500);
+                ProgressVisibility = Visibility.Hidden; // 隐藏进度条
             }
             finally
             {
